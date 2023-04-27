@@ -1,35 +1,22 @@
-use device_query::{DeviceQuery, DeviceState, Keycode};
-use enigo::{Enigo, MouseButton, MouseControllable};
-use std::{
-    sync::atomic::{AtomicBool, Ordering},
-    sync::Arc,
-    thread, time,
-};
+#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
 
-fn main() {
-    let running = Arc::new(AtomicBool::new(true));
-    let device_state = DeviceState::new();
+mod app;
+mod gui;
+mod utils;
 
-    println!("Enter the number of milliseconds between each click");
-    let mut input_text = String::new();
-    std::io::stdin().read_line(&mut input_text).unwrap();
-    let millis = input_text.trim().parse::<u64>().unwrap();
+use eframe::egui;
 
-    println!("Press escape to end program");
+fn main() -> Result<(), eframe::Error> {
+    let native_options = eframe::NativeOptions {
+        always_on_top: true,
+        initial_window_size: Some(egui::vec2(400., 197.)),
+        resizable: false,
+        ..Default::default()
+    };
 
-    let running_clone = running.clone();
-    thread::spawn(move || {
-        let mut enigo = Enigo::new();
-        while running_clone.load(Ordering::Relaxed) {
-            enigo.mouse_click(MouseButton::Left);
-            thread::sleep(time::Duration::from_millis(millis));
-        }
-    });
-
-    loop {
-        if device_state.get_keys().contains(&Keycode::Escape) {
-            running.store(false, Ordering::Relaxed);
-            break;
-        }
-    }
+    eframe::run_native(
+        "Autoclicker",
+        native_options,
+        Box::new(|_cc| Box::new(app::AutoclickerApp::new())),
+    )
 }
